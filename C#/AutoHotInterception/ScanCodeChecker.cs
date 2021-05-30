@@ -10,8 +10,6 @@ namespace AutoHotInterception
      */
 	public class ScanCodeChecker: IDisposable
     {
-        private static readonly TimeSpan MaxWaitTime = TimeSpan.FromSeconds(5); // Wait can't be interrupted, so in order to allow clean exit have it check for cancel flag every MaxWaitTime. Shorter period uses more cpu for faster exit when cancelled.
-
         private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
         private readonly Thread _thread;
@@ -53,7 +51,8 @@ namespace AutoHotInterception
             var stroke = new ManagedWrapper.Stroke();
             while (!_cancellation.IsCancellationRequested)
             {
-                var device = ManagedWrapper.WaitWithTimeout(_deviceContext, (ulong)MaxWaitTime.TotalMilliseconds);
+                //var device = ManagedWrapper.WaitWithTimeout(_deviceContext, (ulong)MaxWaitTime.TotalMilliseconds);
+                var device = CancellableWait.Wait(_deviceContext, _cancellation.Token);
                 if (device > 0)
                 {
                     var keyEvents = new List<KeyEvent>();
@@ -75,6 +74,7 @@ namespace AutoHotInterception
         {
             _cancellation.Cancel();
             _thread.Join();
+            _cancellation.Dispose();
             ManagedWrapper.DestroyContext(_deviceContext);
         }
     }

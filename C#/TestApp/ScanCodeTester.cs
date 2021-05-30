@@ -12,6 +12,8 @@ namespace TestApp
         {
             _scc = new ScanCodeChecker();
             int vid = 0x04F2, pid = 0x0112; // Wyse Keyboard
+            //int vid = 0x050D, pid = 0x0200; // Alex n52
+
             _scc.Subscribe(vid, pid, new Action<KeyEvent[]>(OnKeyEvent));
         }
 

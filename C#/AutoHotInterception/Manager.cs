@@ -8,8 +8,6 @@ namespace AutoHotInterception
 {
     public class Manager : IDisposable
     {
-        private static readonly TimeSpan MaxWaitTime = TimeSpan.FromSeconds(5); // Wait can't be interrupted, so in order to allow clean exit have it check for cancel flag every MaxWaitTime. Shorter period uses more cpu for faster exit when cancelled.
-
         private static readonly ConcurrentDictionary<int, dynamic>
             ContextCallbacks = new ConcurrentDictionary<int, dynamic>();
 
@@ -533,7 +531,7 @@ namespace AutoHotInterception
             else if (!state && _pollThread != null)
             {
                 _cancellation.Cancel();
-                var joined = _pollThread.Join(MaxWaitTime + MaxWaitTime); // Wait a maximum of double the input wait time to give it plenty of time to exit
+                var joined = _pollThread.Join(TimeSpan.FromSeconds(1));
                 Debug.Assert(joined, "Failed to stop the polling thread");
                 _cancellation.Dispose();
                 _cancellation = null;
@@ -587,7 +585,7 @@ namespace AutoHotInterception
             int i;
             while (!_cancellation.IsCancellationRequested)
             {
-                i = ManagedWrapper.WaitWithTimeout(DeviceContext, (ulong)MaxWaitTime.TotalMilliseconds);
+                i = CancellableWait.Wait(DeviceContext, _cancellation.Token);
                 if (i > 0)
                 {
                     if (ManagedWrapper.Receive(DeviceContext, i, ref stroke, 1) > 0)
